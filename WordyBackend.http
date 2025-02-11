@@ -1,0 +1,6 @@
+@WordyBackend_HostAddress = http://localhost:5106
+
+GET {{WordyBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
