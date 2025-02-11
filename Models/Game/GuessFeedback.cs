@@ -15,4 +15,6 @@ public class GuessFeedback(string guess, IEnumerable<LetterGuessFeedback> feedba
     public IEnumerator<LetterGuessFeedback> GetEnumerator() => _feedbacks.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    
+    public bool AllCorrect => _feedbacks.All(f => f == LetterGuessFeedback.Correct);
 }

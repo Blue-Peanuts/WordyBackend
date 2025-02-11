@@ -2,7 +2,10 @@ namespace WordyBackend.Models.Game;
 
 public class GameInstanceDTO(GameInstance gameInstance)
 {
-    public string Id { get; set; } = gameInstance.Id;
-    public int AnswerLength { get; set; } = gameInstance.Answer.Length;
-    public IReadOnlyList<GuessFeedbackDTO> GuessFeedbacks => gameInstance.GuessFeedbacks.Select(gf => new GuessFeedbackDTO(gf)).ToList();
+    public string Id { get; } = gameInstance.Id;
+    public int AnswerLength { get; } = gameInstance.Answer.Length;
+    public IReadOnlyList<GuessFeedback> GuessFeedbacks { get; } = gameInstance.GuessFeedbacks;
+    public string State { get; } = gameInstance.State.ToString();
+    public int Attempts { get; } = gameInstance.Attempts;
+    public int MaxAttempts { get; } = gameInstance.MaxAttempts;
 }

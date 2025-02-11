@@ -51,7 +51,33 @@ app.MapPost("/create-game", (HttpContext context) =>
     var gameInstance = new GameInstance(wordProvider.GetRandomWord(), 5);
     session.GameInstanceManager.AddGameInstance(gameInstance);
 
-    return Results.Json(new { gameInstance });
+    return Results.Json(new { gameInstance = new GameInstanceDTO(gameInstance) });
+});
+
+app.MapPost("/guess", (HttpContext context) =>
+{
+    var sessionId = context.Session.GetString("sessionId");
+    var session = gameSessionManager.TryGetSession(sessionId ?? "");
+    
+    if (session == null)
+        return Results.Json(new { error = "No active session" });
+
+    var gameInstanceId = context.Request.Form["gameInstanceId"].ToString();
+    var guess = context.Request.Form["guess"].ToString();
+
+    var gameInstance = session.GameInstanceManager.TryGetGameInstance(gameInstanceId);
+    if (gameInstance == null)
+        return Results.Json(new { error = "Game instance not found" });
+
+    try
+    {
+        _ = gameInstance.Guess(guess);   
+    }
+    catch (GameException ex)
+    {
+        return Results.Json(new { error = ex.Message });
+    }
+    return Results.Json(new GameInstanceDTO(gameInstance));
 });
 
 app.Run();
