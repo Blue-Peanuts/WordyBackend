@@ -1,41 +1,57 @@
+using WordyBackend.Models;
+using WordyBackend.Models.Game;
+using WordyBackend.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddDistributedMemoryCache(); // Required for session
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSession();
+
+var gameSessionManager = new UserSessionManager();
+var wordProvider = new WordProvider();
+
+app.MapPost("/create-session", (HttpContext context) =>
 {
-    app.MapOpenApi();
-}
+    var session = gameSessionManager.CreateSession("hello");
+    var sessionId = session.Id;
 
-app.UseHttpsRedirection();
+    context.Session.SetString("sessionId", sessionId); // Store in session
 
-var summaries = new[]
+    return Results.Json(new { session = new UserSessionDTO(session) });
+});
+
+app.MapGet("/get-session", (HttpContext context) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var sessionId = context.Session.GetString("sessionId");
+    var session = gameSessionManager.TryGetSession(sessionId ?? "");
+    
+    if (session == null)
+        return Results.Json(new { error = "No active session" });
 
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
+    return Results.Json(new { status = "Session active", session = new UserSessionDTO(session) });
+});
+
+app.MapPost("/create-game", (HttpContext context) =>
+{
+    var sessionId = context.Session.GetString("sessionId");
+    var session = gameSessionManager.TryGetSession(sessionId ?? "");
+    
+    if (session == null)
+        return Results.Json(new { error = "No active session" });
+
+    var gameInstance = new GameInstance(wordProvider.GetRandomWord(), 5);
+    session.GameInstanceManager.AddGameInstance(gameInstance);
+
+    return Results.Json(new { gameInstance });
+});
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
