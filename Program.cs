@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Annotations;
 using WordyBackend.Models;
@@ -6,7 +7,6 @@ using WordyBackend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer(); // Required for swagger
-builder.Services.AddSwaggerGen();
 builder.Services.AddDistributedMemoryCache(); // Required for session
 builder.Services.AddSession(options =>
 {
@@ -23,7 +23,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "My Game API",
         Version = "v1",
-        Description = "API for managing game sessions and gameplay.",
+        Description = "API for managing Worldle-like game sessions and gameplay.",
         Contact = new OpenApiContact
         {
             Name = "Your Name",
@@ -34,13 +34,11 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseSession();
 
 
@@ -81,15 +79,17 @@ app.MapGet("/get-session", (HttpContext context) =>
 .Produces(StatusCodes.Status404NotFound);;
 
 
-app.MapPost("/create-game", (HttpContext context) =>
+app.MapPost("/create-game",
+        (HttpContext context, [FromForm(Name = "word-length")] int wordLength = 5,
+            [FromForm(Name = "max-attempts")] int maxAttempts = 5) =>
 {
     var sessionId = context.Session.GetString("sessionId");
     var session = gameSessionManager.TryGetSession(sessionId ?? "");
     
     if (session == null)
         return Results.NotFound(new { error = "No active session" });
-
-    var gameInstance = new GameInstance(wordProvider.GetRandomWord(), 5);
+    
+    var gameInstance = new GameInstance(wordProvider.GetRandomWord(wordLength), maxAttempts);
     session.GameInstanceManager.AddGameInstance(gameInstance);
 
     return Results.Ok(new { gameInstance = new GameInstanceDTO(gameInstance) });
@@ -98,10 +98,11 @@ app.MapPost("/create-game", (HttpContext context) =>
 .WithMetadata(new SwaggerOperationAttribute("Create a new game instance",
     "Creates a new game instance within the current game session."))
 .Produces<GameInstanceDTO>(StatusCodes.Status200OK)
-.Produces(StatusCodes.Status404NotFound);
+.Produces(StatusCodes.Status404NotFound)
+.DisableAntiforgery();
 
 
-app.MapPost("/guess", (HttpContext context) =>
+app.MapPost("/guess", (HttpContext context, [FromForm] string guess) =>
 {
     var sessionId = context.Session.GetString("sessionId");
     var session = gameSessionManager.TryGetSession(sessionId ?? "");
@@ -110,7 +111,7 @@ app.MapPost("/guess", (HttpContext context) =>
         return Results.NotFound(new { error = "No active session" });
 
     var gameInstanceId = context.Request.Form["gameInstanceId"].ToString();
-    var guess = context.Request.Form["guess"].ToString();
+    // var guess = context.Request.Form["guess"].ToString();
 
     var gameInstance = session.GameInstanceManager.TryGetGameInstance(gameInstanceId);
     if (gameInstance == null)
@@ -131,7 +132,8 @@ app.MapPost("/guess", (HttpContext context) =>
     "Makes a guess in the specified game instance."))
 .Produces<GameInstanceDTO>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status404NotFound)
-.Produces(StatusCodes.Status400BadRequest);;
+.Produces(StatusCodes.Status400BadRequest)
+.DisableAntiforgery();
 
 
 app.Run();
