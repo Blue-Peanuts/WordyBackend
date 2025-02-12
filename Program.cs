@@ -20,15 +20,9 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(xmlPath);
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "My Game API",
+        Title = "Wordy API",
         Version = "v1",
         Description = "API for managing Worldle-like game sessions and gameplay.",
-        Contact = new OpenApiContact
-        {
-            Name = "Your Name",
-            Email = "your.email@example.com",
-            Url = new Uri("https://example.com"),
-        }
     });
 });
 
