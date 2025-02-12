@@ -1,0 +1,6 @@
+﻿services:
+  wordy-backend:
+    image: wordy-backend
+    build:
+      context: .
+      dockerfile: Dockerfile

@@ -4,7 +4,6 @@ using Swashbuckle.AspNetCore.Annotations;
 using WordyBackend.Models;
 using WordyBackend.Models.Game;
 using WordyBackend.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer(); // Required for swagger
 builder.Services.AddDistributedMemoryCache(); // Required for session
@@ -34,11 +33,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 app.UseSession();
 
 
